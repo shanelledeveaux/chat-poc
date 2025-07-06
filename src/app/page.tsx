@@ -3,6 +3,19 @@ import React, { useState } from "react";
 import { InputSection } from "./components/InputSection";
 import { AnswerDisplay } from "./components/AnswerDisplay";
 
+interface PlayerCharacter {
+  name: string;
+  sunSign: string;
+  avatarUrl?: string;
+}
+
+const characters: PlayerCharacter[] = [
+  { name: "Brian", sunSign: "Cancer", avatarUrl: "user-avatar.jpg" },
+  { name: "Veronica", sunSign: "Capricorn", avatarUrl: "user-avatar.jpg" },
+  { name: "Alex", sunSign: "Cancer", avatarUrl: "user-avatar.jpg" },
+  { name: "Juan", sunSign: "Sagittarius", avatarUrl: "user-avatar.jpg" },
+];
+
 export default function Page() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
@@ -12,7 +25,7 @@ export default function Page() {
     setLoading(true);
     const res = await fetch("/api/search", {
       method: "POST",
-      body: JSON.stringify({ query: question }),
+      body: JSON.stringify({ query: question, characters }),
       headers: { "Content-Type": "application/json" },
     });
     const data = await res.json();
@@ -22,7 +35,7 @@ export default function Page() {
   async function handleConfirm(selected: any[]) {
     const res = await fetch("/api/chat", {
       method: "POST",
-      body: JSON.stringify({ question, sources: selected }),
+      body: JSON.stringify({ question, characters }),
       headers: { "Content-Type": "application/json" },
     });
 
@@ -60,15 +73,14 @@ export default function Page() {
     <main style={{ padding: 24 }}>
       {!loading && !answer && (
         <InputSection
+          characters={characters ?? []}
           question={question}
           setQuestion={setQuestion}
           onSearch={handleSearch}
           disabled={loading}
         />
       )}
-
-      {loading && <p>Loading...</p>}
-
+      {loading && <p>Generating Scenario. It takes awhile!!!</p>}
       {!loading && answer && <AnswerDisplay content={answer} />}
     </main>
   );
