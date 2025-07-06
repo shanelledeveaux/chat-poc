@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 export default function Page() {
   const [question, setQuestion] = useState("");
@@ -26,13 +27,13 @@ export default function Page() {
 
     const reader = res.body?.getReader();
     const decoder = new TextDecoder();
+    setAnswer(""); // reset previous answer
 
     while (reader) {
       const { done, value } = await reader.read();
       if (done) break;
 
       const chunk = decoder.decode(value);
-
       for (const line of chunk.split("\n")) {
         if (line.startsWith("data: ")) {
           const json = line.replace("data: ", "").trim();
@@ -56,17 +57,27 @@ export default function Page() {
 
   return (
     <main style={{ padding: 24 }}>
-      <input
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        placeholder="A few keywords for your scenario"
-        style={{ width: "80%" }}
-      />
-      <button onClick={handleSearch} disabled={loading}>
-        Search
-      </button>
+      {!loading && !answer && (
+        <>
+          <input
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="A few keywords for your scenario"
+            style={{ width: "80%" }}
+          />
+          <button onClick={handleSearch} disabled={loading}>
+            Search
+          </button>
+        </>
+      )}
 
-      <pre>{answer}</pre>
+      {loading && <p>Generating scenario. May take awhile...</p>}
+
+      {!loading && answer && (
+        <div className="prose max-w-none">
+          <ReactMarkdown>{answer}</ReactMarkdown>
+        </div>
+      )}
     </main>
   );
 }
