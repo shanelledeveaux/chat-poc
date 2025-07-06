@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { InputSection } from "./components/InputSection";
+import { AnswerDisplay } from "./components/AnswerDisplay";
 
 export default function Page() {
   const [question, setQuestion] = useState("");
@@ -27,7 +28,7 @@ export default function Page() {
 
     const reader = res.body?.getReader();
     const decoder = new TextDecoder();
-    setAnswer(""); // reset previous answer
+    setAnswer("");
 
     while (reader) {
       const { done, value } = await reader.read();
@@ -58,26 +59,17 @@ export default function Page() {
   return (
     <main style={{ padding: 24 }}>
       {!loading && !answer && (
-        <>
-          <input
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="A few keywords for your scenario"
-            style={{ width: "80%" }}
-          />
-          <button onClick={handleSearch} disabled={loading}>
-            Search
-          </button>
-        </>
+        <InputSection
+          question={question}
+          setQuestion={setQuestion}
+          onSearch={handleSearch}
+          disabled={loading}
+        />
       )}
 
-      {loading && <p>Generating scenario. May take awhile...</p>}
+      {loading && <p>Loading...</p>}
 
-      {!loading && answer && (
-        <div className="prose max-w-none">
-          <ReactMarkdown>{answer}</ReactMarkdown>
-        </div>
-      )}
+      {!loading && answer && <AnswerDisplay content={answer} />}
     </main>
   );
 }
