@@ -22,7 +22,6 @@ export function InputSection({
   onSearch,
   disabled,
 }: Props) {
-  console.log(characters);
   return (
     <div className="flex flex-col gap-4 items-start">
       <div className="flex flex-wrap gap-4">
@@ -53,7 +52,7 @@ export function InputSection({
       <button
         onClick={onSearch}
         disabled={disabled}
-        className="px-4 py-2 bg-brand text-white rounded"
+        className="px-4 py-2 rounded"
       >
         Search
       </button>

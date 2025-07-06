@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
-import { InputSection } from "./components/InputSection";
-import { AnswerDisplay } from "./components/AnswerDisplay";
+import { InputSection } from "./components/InputSection.tsx/InputSection";
+import { AnswerDisplay } from "./components/AnswerDisplay/AnswerDisplay";
 
 interface PlayerCharacter {
   name: string;
