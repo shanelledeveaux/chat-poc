@@ -1,83 +1,87 @@
-'use client';
-import React, { useState } from 'react';
-import { ResultSelector } from './components/ResultSelector';
+"use client";
+import React, { useState } from "react";
+import { InputSection } from "./components/InputSection.tsx/InputSection";
+import { AnswerDisplay } from "./components/AnswerDisplay/AnswerDisplay";
+
+interface PlayerCharacter {
+  name: string;
+  sunSign: string;
+  avatarUrl?: string;
+}
+
+const characters: PlayerCharacter[] = [
+  { name: "Brian", sunSign: "Cancer", avatarUrl: "user-avatar.jpg" },
+  { name: "Veronica", sunSign: "Capricorn", avatarUrl: "user-avatar.jpg" },
+  { name: "Alex", sunSign: "Cancer", avatarUrl: "user-avatar.jpg" },
+  { name: "Juan", sunSign: "Sagittarius", avatarUrl: "user-avatar.jpg" },
+];
 
 export default function Page() {
-  const [question, setQuestion] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-  const [answer, setAnswer] = useState('');
-  const [stage, setStage] = useState<'input' | 'select' | 'answer'>('input');
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSearch() {
     setLoading(true);
-    console.log({question});
-    const res = await fetch('/api/search', {
-      method: 'POST',
-      body: JSON.stringify({ query: question }),
-      headers: { 'Content-Type': 'application/json' }
+    const res = await fetch("/api/search", {
+      method: "POST",
+      body: JSON.stringify({ query: question, characters }),
+      headers: { "Content-Type": "application/json" },
     });
     const data = await res.json();
-    console.log({data: data.results})
-
-    setResults(data.results);
-    setStage('select');
-    setLoading(false);
+    await handleConfirm(data.results);
   }
 
   async function handleConfirm(selected: any[]) {
-    setLoading(true);
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      body: JSON.stringify({ question, sources: selected }),
-      headers: { 'Content-Type': 'application/json' }
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ question, characters }),
+      headers: { "Content-Type": "application/json" },
     });
 
     const reader = res.body?.getReader();
     const decoder = new TextDecoder();
-    let final = '';
+    setAnswer("");
 
-while (reader) {
-  const { done, value } = await reader.read();
-  if (done) break;
+    while (reader) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-  const chunk = decoder.decode(value);
-
-  for (const line of chunk.split('\n')) {
-    if (line.startsWith('data: ')) {
-      const json = line.replace('data: ', '').trim();
-      if (json && json !== '[DONE]') {
-        try {   
-          const parsed = JSON.parse(json);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) {
-            setAnswer(prev => prev + content);
+      const chunk = decoder.decode(value);
+      for (const line of chunk.split("\n")) {
+        if (line.startsWith("data: ")) {
+          const json = line.replace("data: ", "").trim();
+          if (json && json !== "[DONE]") {
+            try {
+              const parsed = JSON.parse(json);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) {
+                setAnswer((prev) => prev + content);
+              }
+            } catch (e) {
+              console.error("Failed to parse chunk:", json);
+            }
           }
-        } catch (e) {
-          console.error('Failed to parse chunk:', json);
         }
       }
     }
-  }
-}
 
-
-    setStage('answer');
     setLoading(false);
   }
 
   return (
     <main style={{ padding: 24 }}>
-      {stage === 'input' && (
-        <>
-          <input value={question} onChange={e => setQuestion(e.target.value)} placeholder="Ask something..." style={{ width: '80%' }} />
-          <button onClick={handleSearch} disabled={loading}>Search</button>
-        </>
+      {!loading && !answer && (
+        <InputSection
+          characters={characters ?? []}
+          question={question}
+          setQuestion={setQuestion}
+          onSearch={handleSearch}
+          disabled={loading}
+        />
       )}
-
-      {stage === 'select' && <ResultSelector results={results} onConfirm={handleConfirm} />}
-
-      {stage === 'answer' && <pre>{answer}</pre>}
+      {loading && <p>Generating Scenario. It takes awhile!!!</p>}
+      {!loading && answer && <AnswerDisplay content={answer} />}
     </main>
   );
 }

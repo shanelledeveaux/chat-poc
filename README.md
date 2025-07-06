@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌌 AstroRPG — Astrology Storytelling Adventure
 
-## Getting Started
+AstroRPG is a multiplayer astrology-themed RPG storytelling app built with Next.js and React. Players collaborate in a mystical world where zodiac signs shape character traits, storylines, and interactive choices.
 
-First, run the development server:
+## 🚀 Tech Stack
+(All are flexible)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Framework:** [Next.js](https://nextjs.org/)
+- **UI:** React + Tailwind CSS + ShadCN/UI
+- **State Management:** Zustand (or Redux if needed)
+- **Real-time:** WebSockets (Socket.IO or custom)
+- **Database:** Supabase or Firebase (TBD)
+- **Auth:** NextAuth.js or Clerk (TBD)
+- **Platform:** Web-first, React Native compatible
+
+## 🧱 Features
+
+- Zodiac-based character creation
+- Collaborative storytelling sessions
+- Real-time multiplayer chat and choices
+- Dynamic branching narratives
+- Session-based progression & saves
+- Cross-platform-ready codebase
+
+## 📁 Project Structure
+(Proposed, could change)
+```
+/
+├── app/                  # Next.js App Router structure
+│   ├── api/              # Route handlers
+│   └── (routes)/         # Pages and layouts
+├── components/           # Reusable UI components
+├── lib/                  # Utils, API clients, socket handlers
+├── stores/               # Zustand stores
+├── styles/               # Tailwind and global styles
+└── public/               # Static assets
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Clone the repo:**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   git clone https://github.com/astro-stories/chat-poc.git
+   cd astrorpg
+   ```
 
-## Learn More
+2. **Install dependencies:**
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   npm install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Run the dev server:**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   npm dev
+   ```
 
-## Deploy on Vercel
+4. **Visit:**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   ```
+   http://localhost:3000
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔐 Environment Variables
+
+Create a `.env.local` file and configure:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXTAUTH_SECRET=
+...
+```
+
+## 🧪 Testing
+
+Coming soon
+
+## 🗺️ Roadmap
+
+- Story engine module
+- Persistent player profiles
+- Mobile app with React Native
+
+## 🤝 Contributing
+
+Contributions welcome! Please open an issue or pull request.
