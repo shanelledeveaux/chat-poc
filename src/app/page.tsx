@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import { InputSection } from "./components/InputSection.tsx/InputSection";
 import { AnswerDisplay } from "./components/AnswerDisplay/AnswerDisplay";
+import { CharacterList } from "./components/CharacterList/CharacterList";
+import { ResponseInput } from "./components/ResponseInput/ResponseInput";
 
 interface PlayerCharacter {
   name: string;
@@ -16,10 +18,17 @@ const characters: PlayerCharacter[] = [
   { name: "Juan", sunSign: "Sagittarius", avatarUrl: "user-avatar.jpg" },
 ];
 
+const currentUser: PlayerCharacter = {
+  name: "Brian",
+  sunSign: "Cancer",
+  avatarUrl: "user-avatar.jpg",
+};
+
 export default function Page() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState<string | null>(null);
 
   async function handleSearch() {
     setLoading(true);
@@ -72,16 +81,30 @@ export default function Page() {
   return (
     <main style={{ padding: 24 }}>
       {!loading && !answer && (
-        <InputSection
-          characters={characters ?? []}
-          question={question}
-          setQuestion={setQuestion}
-          onSearch={handleSearch}
-          disabled={loading}
-        />
+        <>
+          <CharacterList characters={characters} />
+          <InputSection
+            question={question}
+            setQuestion={setQuestion}
+            onSearch={handleSearch}
+            disabled={loading}
+          />
+        </>
       )}
       {loading && <p>Generating Scenario. It takes awhile!!!</p>}
-      {!loading && answer && <AnswerDisplay content={answer} />}
+      {!loading && answer && (
+        <>
+          <AnswerDisplay content={answer} />
+          <ResponseInput onSubmit={(text) => setResponse(text)} />
+        </>
+      )}
+
+      {response && (
+        <div className="mt-4 p-4 border rounded bg-gray-50">
+          <strong>{currentUser.name} responds:</strong>
+          <p>{response}</p>
+        </div>
+      )}
     </main>
   );
 }

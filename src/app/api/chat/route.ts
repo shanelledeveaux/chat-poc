@@ -41,7 +41,7 @@ Incorporate the following player characters into the story. Create character-spe
 
 ${formatCharacters(characters)}
 
-Include up to 2 interconnected locations, 1-3 clues per location, and a supernatural threat linked to forbidden knowledge or an artifact.
+Include 1 location, 1-3 clues with the location, and a supernatural threat linked to forbidden knowledge or an artifact.
 Build a mood of dread and reality distortion. Include rules-light scenario guidance and output using clean and well-structured Markdown with Clear section headings using '##', Bullet points and numbered lists where appropriate, and Blank lines between paragraphs and sections that can be displayed on the web.`,
         },
       ],
