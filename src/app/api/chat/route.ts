@@ -18,7 +18,12 @@ function formatCharacters(characters: PlayerCharacter[]) {
 }
 
 export async function POST(req: Request) {
-  const { question, characters } = await req.json();
+  const { question, characters, responses } = await req.json();
+
+  const responseMessages = responses.map((r: { user: any; text: any }) => ({
+    role: "user",
+    content: `${r.user} responds: ${r.text}`,
+  }));
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -44,6 +49,7 @@ ${formatCharacters(characters)}
 Include 1 location, 1-3 clues with the location, and a supernatural threat linked to forbidden knowledge or an artifact.
 Build a mood of dread and reality distortion. Include rules-light scenario guidance and output using clean and well-structured Markdown with Clear section headings using '##', Bullet points and numbered lists where appropriate, and Blank lines between paragraphs and sections that can be displayed on the web.`,
         },
+        ...responseMessages,
       ],
     }),
   });

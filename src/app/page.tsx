@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { InputSection } from "./components/InputSection.tsx/InputSection";
 import { AnswerDisplay } from "./components/AnswerDisplay/AnswerDisplay";
 import { CharacterList } from "./components/CharacterList/CharacterList";
@@ -28,15 +28,24 @@ export default function Page() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState<string | null>(null);
+  const [responses, setResponses] = useState<string[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(`responses:${currentUser.name}`);
+    if (stored) setResponses(JSON.parse(stored));
+  }, []);
 
   async function handleSearch() {
     setLoading(true);
+    localStorage.removeItem(`responses:${currentUser.name}`);
+    setResponses([]);
+
     const res = await fetch("/api/search", {
       method: "POST",
       body: JSON.stringify({ query: question, characters }),
       headers: { "Content-Type": "application/json" },
     });
+
     const data = await res.json();
     await handleConfirm(data.results);
   }
@@ -75,6 +84,15 @@ export default function Page() {
       }
     }
 
+    function handleResponse(text: string) {
+      const updated = [...responses, text];
+      setResponses(updated);
+      localStorage.setItem(
+        `responses:${currentUser.name}`,
+        JSON.stringify(updated)
+      );
+    }
+
     setLoading(false);
   }
 
@@ -95,14 +113,16 @@ export default function Page() {
       {!loading && answer && (
         <>
           <AnswerDisplay content={answer} />
-          <ResponseInput onSubmit={(text) => setResponse(text)} />
+          <ResponseInput
+            onSubmit={(text) => setResponses([text, ...responses])}
+          />
         </>
       )}
 
-      {response && (
+      {responses && (
         <div className="mt-4 p-4 border rounded bg-gray-50">
           <strong>{currentUser.name} responds:</strong>
-          <p>{response}</p>
+          <p>{responses}</p>
         </div>
       )}
     </main>
