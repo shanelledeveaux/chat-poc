@@ -1,6 +1,8 @@
-// app/profile/page.tsx
 "use client";
+
 import { useState } from "react";
+import Image from "next/image";
+import { PrimaryButton } from "../components/PrimaryButton/PrimaryButton";
 
 export default function ProfilePage() {
   const [name, setName] = useState("Brian");
@@ -8,22 +10,58 @@ export default function ProfilePage() {
   const [motivation, setMotivation] = useState("personal");
 
   const save = async () => {
-    // TODO: persist to Supabase (profiles table)
-    // await supabase.from("profiles").upsert({ id: userId, name, sunSign, motivation })
-    alert("Saved (stub).");
+    // TODO: persist to Supabase
+    alert("Profile saved!");
   };
 
   return (
-    <section>
-      <h1>Profile</h1>
-      <div style={{ display: "grid", gap: 12, maxWidth: 420 }}>
-        <label>
-          Name
-          <input value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label>
-          Sun sign
-          <select value={sunSign} onChange={(e) => setSunSign(e.target.value)}>
+    <section className="max-w-sm mx-auto">
+      {/* Top bar like the mock */}
+      <div className="flex items-center justify-between py-4">
+        <span className="text-base font-semibold tracking-wide">LOGO</span>
+        <div className="w-10" />
+      </div>
+
+      {/* Card container in the same style as /stories */}
+      <div className="rounded-md overflow-hidden border border-gray-200 bg-white">
+        {/* Avatar row */}
+        <div className="relative px-4 py-5 border-b border-gray-200">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-full overflow-hidden ring-4 ring-white shadow">
+              <Image
+                src="/user-avatar.jpg" // replace with user image
+                alt="Avatar"
+                width={56}
+                height={56}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Name */}
+        <div className="px-4 py-5 border-b border-gray-200">
+          <label className="block text-xs font-semibold text-gray-900 mb-2">
+            NAME
+          </label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Your name"
+          />
+        </div>
+
+        {/* Sun Sign */}
+        <div className="px-4 py-5 border-b border-gray-200">
+          <label className="block text-xs font-semibold text-gray-900 mb-2">
+            SUN SIGN
+          </label>
+          <select
+            value={sunSign}
+            onChange={(e) => setSunSign(e.target.value)}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          >
             {[
               "Aries",
               "Taurus",
@@ -43,21 +81,30 @@ export default function ProfilePage() {
               </option>
             ))}
           </select>
-        </label>
-        <label>
-          Motivation
+        </div>
+
+        {/* Motivation */}
+        <div className="px-4 py-5">
+          <label className="block text-xs font-semibold text-gray-900 mb-2">
+            MOTIVATION
+          </label>
           <select
             value={motivation}
             onChange={(e) => setMotivation(e.target.value)}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             {["personal", "investigative", "accidental"].map((m) => (
               <option key={m} value={m}>
-                {m}
+                {m.toUpperCase()}
               </option>
             ))}
           </select>
-        </label>
-        <button onClick={save}>Save</button>
+        </div>
+      </div>
+
+      {/* CTA aligned with mock button style */}
+      <div className="pt-4">
+        <PrimaryButton onClick={save}>SAVE PROFILE</PrimaryButton>
       </div>
     </section>
   );
