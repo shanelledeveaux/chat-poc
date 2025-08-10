@@ -1,4 +1,3 @@
-// /api/chat/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/app/lib/supabaseClient";
@@ -22,14 +21,14 @@ function formatCharacters(characters: PlayerCharacter[]) {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { game_id, characters, new_response } = body || {};
+  const { gameId, characters, new_response } = body || {};
 
   const isFirstStep = new_response?.step_number === 0;
 
   const { data: priorResponses } = await supabase
     .from("player_responses")
-    .select("content, player_id")
-    .eq("game_id", game_id)
+    .select("content, playerId")
+    .eq("game_id", gameId)
     .order("created_at", { ascending: true });
 
   const responseMessages =
@@ -53,14 +52,12 @@ Introduce characters using their zodiac archetypes:
 ${formatCharacters(characters)}
 
 Begin with eerie tension and mystery. Return only the first short paragraph of the story in clean, spooky Markdown.`
-    : `Continue the cosmic horror RPG story based on the following player input.
-
-Reinforce surreal dread, character dynamics, and unfolding mystery.
+    : `Continue the RPG story based on the following player input.
 
 Characters:
 ${formatCharacters(characters)}
 
-Respond with one short paragraph in clean, spooky Markdown.`;
+Respond with one short paragraph, max 2 sentences.`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -71,7 +68,10 @@ Respond with one short paragraph in clean, spooky Markdown.`;
     body: JSON.stringify({
       model: "gpt-4",
       stream: true,
-      messages: [{ role: "user", content: systemPrompt }, ...responseMessages],
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...responseMessages,
+      ],
     }),
   });
 
@@ -115,18 +115,18 @@ Respond with one short paragraph in clean, spooky Markdown.`;
           const { data: existing } = await supabase
             .from("scenario_steps")
             .select("step_number")
-            .eq("game_id", game_id)
+            .eq("game_id", gameId)
             .order("step_number", { ascending: false })
             .limit(1);
 
           stepNumber = existing?.[0]?.step_number + 1 || 0;
         }
 
-        await supabase.from("scenario_steps").insert([
+        await supabase.from("system_responses").insert([
           {
-            game_id,
+            room: gameId,
+            content: cleanNarrative.trim(),
             step_number: stepNumber,
-            ai_markdown: cleanNarrative.trim(),
           },
         ]);
       }
