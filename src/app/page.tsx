@@ -1,78 +1,50 @@
-"use client";
-import React from "react";
-import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
-import { CharacterList } from "./components/CharacterList/CharacterList";
-import { useChatGame } from "./hooks/useChatGame/useChatGame";
-import { ChatPanel } from "./components/ChatPanel/ChatPanel";
+// app/page.tsx
+import Image from "next/image";
+import { PrimaryButton } from "./components/PrimaryButton/PrimaryButton";
 
-const characters: {
-  name: string;
-  sunSign: string;
-  avatarUrl: string;
-  motivation: string;
-}[] = [
-  {
-    name: "Brian",
-    sunSign: "Cancer",
-    avatarUrl: "user-avatar.jpg",
-    motivation: "personal",
-  },
-  {
-    name: "Veronica",
-    sunSign: "Capricorn",
-    avatarUrl: "user-avatar.jpg",
-    motivation: "investigative",
-  },
-  {
-    name: "Alex",
-    sunSign: "Cancer",
-    avatarUrl: "user-avatar.jpg",
-    motivation: "accidental",
-  },
-  {
-    name: "Juan",
-    sunSign: "Sagittarius",
-    avatarUrl: "user-avatar.jpg",
-    motivation: "personal",
-  },
-];
-type PlayerCharacter = {
-  name: string;
-  sunSign: string;
-  avatarUrl: string;
-  motivation: string;
-};
-
-const currentUser: PlayerCharacter = {
-  name: "Brian",
-  sunSign: "Cancer",
-  avatarUrl: "user-avatar.jpg",
-  motivation: "personal",
-};
-
-export default function Page() {
-  const { handleSend, handleStart, gameId, messages, loading } = useChatGame(
-    currentUser,
-    characters
-  );
-
-  const onSend = async (msg: string | { message: string }) => {
-    // if no gameId yet, start a new one first
-    if (!gameId) {
-      handleStart({ message: msg });
-    }
-    await handleSend(typeof msg === "string" ? msg : msg.message);
-  };
+export default function HomePage() {
+  const date = new Date().toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
-    <main style={{ padding: 24 }}>
-      <CharacterList characters={characters} />
-      <ChatPanel
-        currentUser={currentUser}
-        messages={messages}
-        loading={loading}
-        onSend={onSend}
-      />
-    </main>
+    <section className="flex flex-col items-center h-full text-left px-4 pt-6 pb-20 max-w-sm mx-auto">
+      {/* Logo */}
+      <div className="w-full flex justify-start mb-6">
+        <span className="text-base font-semibold tracking-wide">LOGO</span>
+      </div>
+      <div>
+        {/* Hero image */}
+        <div className="mb-6">
+          <Image
+            src="/user-avatar.jpg" // replace with your asset
+            alt="Hero"
+            width={128}
+            height={128}
+            className="rounded-full object-cover"
+          />
+        </div>
+
+        {/* Date */}
+        <p className="text-xs text-gray-500 mb-2">{date}</p>
+
+        {/* Headline */}
+        <h1 className="text-2xl font-extrabold leading-snug mb-3">
+          Your sign. Your fate. <br /> Infinite possibilities.
+        </h1>
+
+        {/* Body */}
+        <p className="text-sm text-gray-600 mb-6">
+          Jump into a wild, astrological adventure where your zodiac traits
+          spark outrageous scenarios. Play solo or with friends and watch the
+          cosmic drama unfold.
+        </p>
+
+        {/* CTA */}
+        <PrimaryButton href="/stories">START YOUR QUEST</PrimaryButton>
+      </div>
+    </section>
   );
 }
