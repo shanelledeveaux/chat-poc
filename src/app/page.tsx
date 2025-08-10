@@ -1,87 +1,78 @@
 "use client";
-import React, { useState } from "react";
-import { InputSection } from "./components/InputSection.tsx/InputSection";
-import { AnswerDisplay } from "./components/AnswerDisplay/AnswerDisplay";
+import React from "react";
+import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
+import { CharacterList } from "./components/CharacterList/CharacterList";
+import { useChatGame } from "./hooks/useChatGame/useChatGame";
+import { ChatPanel } from "./components/ChatPanel/ChatPanel";
 
-interface PlayerCharacter {
+const characters: {
   name: string;
   sunSign: string;
-  avatarUrl?: string;
-}
-
-const characters: PlayerCharacter[] = [
-  { name: "Brian", sunSign: "Cancer", avatarUrl: "user-avatar.jpg" },
-  { name: "Veronica", sunSign: "Capricorn", avatarUrl: "user-avatar.jpg" },
-  { name: "Alex", sunSign: "Cancer", avatarUrl: "user-avatar.jpg" },
-  { name: "Juan", sunSign: "Sagittarius", avatarUrl: "user-avatar.jpg" },
+  avatarUrl: string;
+  motivation: string;
+}[] = [
+  {
+    name: "Brian",
+    sunSign: "Cancer",
+    avatarUrl: "user-avatar.jpg",
+    motivation: "personal",
+  },
+  {
+    name: "Veronica",
+    sunSign: "Capricorn",
+    avatarUrl: "user-avatar.jpg",
+    motivation: "investigative",
+  },
+  {
+    name: "Alex",
+    sunSign: "Cancer",
+    avatarUrl: "user-avatar.jpg",
+    motivation: "accidental",
+  },
+  {
+    name: "Juan",
+    sunSign: "Sagittarius",
+    avatarUrl: "user-avatar.jpg",
+    motivation: "personal",
+  },
 ];
+type PlayerCharacter = {
+  name: string;
+  sunSign: string;
+  avatarUrl: string;
+  motivation: string;
+};
+
+const currentUser: PlayerCharacter = {
+  name: "Brian",
+  sunSign: "Cancer",
+  avatarUrl: "user-avatar.jpg",
+  motivation: "personal",
+};
 
 export default function Page() {
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { handleSend, handleStart, gameId, messages, loading } = useChatGame(
+    currentUser,
+    characters
+  );
 
-  async function handleSearch() {
-    setLoading(true);
-    const res = await fetch("/api/search", {
-      method: "POST",
-      body: JSON.stringify({ query: question, characters }),
-      headers: { "Content-Type": "application/json" },
-    });
-    const data = await res.json();
-    await handleConfirm(data.results);
-  }
-
-  async function handleConfirm(selected: any[]) {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      body: JSON.stringify({ question, characters }),
-      headers: { "Content-Type": "application/json" },
-    });
-
-    const reader = res.body?.getReader();
-    const decoder = new TextDecoder();
-    setAnswer("");
-
-    while (reader) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value);
-      for (const line of chunk.split("\n")) {
-        if (line.startsWith("data: ")) {
-          const json = line.replace("data: ", "").trim();
-          if (json && json !== "[DONE]") {
-            try {
-              const parsed = JSON.parse(json);
-              const content = parsed.choices?.[0]?.delta?.content;
-              if (content) {
-                setAnswer((prev) => prev + content);
-              }
-            } catch (e) {
-              console.error("Failed to parse chunk:", json);
-            }
-          }
-        }
-      }
+  const onSend = async (msg: string | { message: string }) => {
+    // if no gameId yet, start a new one first
+    if (!gameId) {
+      handleStart({ message: msg });
     }
-
-    setLoading(false);
-  }
+    await handleSend(typeof msg === "string" ? msg : msg.message);
+  };
 
   return (
     <main style={{ padding: 24 }}>
-      {!loading && !answer && (
-        <InputSection
-          characters={characters ?? []}
-          question={question}
-          setQuestion={setQuestion}
-          onSearch={handleSearch}
-          disabled={loading}
-        />
-      )}
-      {loading && <p>Generating Scenario. It takes awhile!!!</p>}
-      {!loading && answer && <AnswerDisplay content={answer} />}
+      <CharacterList characters={characters} />
+      <ChatPanel
+        currentUser={currentUser}
+        messages={messages}
+        loading={loading}
+        onSend={onSend}
+      />
     </main>
   );
 }
