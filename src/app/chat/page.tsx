@@ -65,7 +65,7 @@ export default function Page() {
   };
 
   return (
-    <main style={{ padding: 24 }}>
+    <main>
       <CharacterList characters={characters} />
       <ChatPanel
         currentUser={currentUser}
