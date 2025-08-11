@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/app/lib/supabaseClient";
 
 export const runtime = "nodejs";
+export const dynamic = 'force-dynamic'; // prevent static optimization
+
 
 interface PlayerCharacter {
   name: string;
@@ -21,23 +23,28 @@ function formatCharacters(characters: PlayerCharacter[]) {
 
 export async function POST(req: Request) {
   const body = await req.json();
+  console.log({chatRouteBody: body})
   const { gameId, characters, new_response } = body || {};
 
-  const isFirstStep = new_response?.step_number === 0;
+  // const isFirstStep = new_response?.step_number === 0; //until steps are implemented
 
   const { data: priorResponses } = await supabase
     .from("player_responses")
-    .select("content, playerId")
-    .eq("game_id", gameId)
+    .select("content, user_id")
+    .eq("room", gameId)
     .order("created_at", { ascending: true });
 
+
+  const isFirstStep = priorResponses?.length == 1; 
+
+  console.log({isFirstStep})
   const responseMessages =
     priorResponses?.map((r: any) => ({
-      role: "user",
-      content: `${r.player_id} responds: ${r.content}`,
+      role: r.user_id == 'System' ? 'assistant' : 'user',
+      content: `${r.user_id} responds: ${r.content}`,
     })) || [];
 
-  if (new_response?.player_id && new_response?.content) {
+  if (new_response?.user_id && new_response?.content) {
     responseMessages.push({
       role: "user",
       content: `${new_response.player_id} responds: ${new_response.content}`,
@@ -58,6 +65,9 @@ Characters:
 ${formatCharacters(characters)}
 
 Respond with one short paragraph, max 2 sentences.`;
+
+console.log({systemPrompt})
+console.log({responseMessages})
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",

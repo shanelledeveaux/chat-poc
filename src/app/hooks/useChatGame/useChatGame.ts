@@ -25,7 +25,7 @@ export function useChatGame(
 
 
   useEffect(() => {
-      setGameId("d3483344-67b8-41c3-888f-c717d4316241");
+      setGameId("782be954-26ac-4bdf-89ed-cf460ae696c8");
 
     if (!gameId) return;
 
@@ -162,7 +162,7 @@ export function useChatGame(
     async (message: { message: any }) => {
       // TEMPORARILY PLAYING THE SAME GAME
       // const newId = crypto.randomUUID();
-      setGameId("d3483344-67b8-41c3-888f-c717d4316241");
+      setGameId("782be954-26ac-4bdf-89ed-cf460ae696c8");
       // setMessages([]);
       // supabase
       //   .from("games")
@@ -198,7 +198,7 @@ export function useChatGame(
       try {
         const res = await fetch("/api/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", 'Cache-Control': 'no-cache, no-transform' },
           body: JSON.stringify({
             gameId,
             characters, // optional, but supported by your route
