@@ -7,7 +7,7 @@ import {
   Message,
   MessageInput,
 } from "@chatscope/chat-ui-kit-react";
-import "./chatTheme.css";
+import "./ChatTheme.css";
 
 export type ChatMessage = {
   content: string;

@@ -8,8 +8,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="pb-12 bg-gray-950 text-white h-screen">
-        <main className="px-4 pt-4 pb-4 h-full">{children}</main>
+      <body className="bg-gray-950 text-white h-screen">
+        <main className="px-4 pt-4 pb-14 h-full">{children}</main>
         <NavBar />
       </body>
     </html>

@@ -61,15 +61,14 @@ function StoryCard({ s }: { s: Story }) {
 
 export default function StoriesPage() {
   return (
-    <section className="max-w-sm mx-auto">
-      {/* Top bar like your mock */}
+    <section className="max-w-sm mx-auto h-full pb-12">
       <div className="flex items-center justify-between py-4">
         <span className="text-base font-semibold tracking-wide">LOGO</span>
-        {/* spacer for future actions */}
+
         <div className="w-10" />
       </div>
 
-      <div className="rounded-md overflow-y-auto">
+      <div className="rounded-md overflow-y-auto h-full">
         {STORIES.map((s, i) => (
           <StoryCard key={s.id} s={s} />
         ))}
