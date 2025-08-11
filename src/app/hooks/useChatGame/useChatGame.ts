@@ -19,7 +19,14 @@ export function useChatGame(
   const isStreamingRef = useRef(false);
   const streamingMsgIndexRef = useRef<number | null>(null);
 
+  const roomChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  // tracks in-flight scenario message indices by a stream key
+  const inflightByKeyRef = useRef<Record<string, number>>({});
+
+
   useEffect(() => {
+      setGameId("782be954-26ac-4bdf-89ed-cf460ae696c8");
+
     if (!gameId) return;
 
     async function loadInitial() {
@@ -90,16 +97,72 @@ export function useChatGame(
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [gameId]);
+  // 2) Broadcast channel for live streaming
+  const roomChannel = supabase.channel(`room:${gameId}`, {
+    config: { broadcast: { ack: true } },
+  });
+
+  roomChannel
+    .on("broadcast", { event: "scenario_chunk" }, (evt) => {
+      const { streamKey, delta } = evt.payload as { streamKey: string; delta: string };
+
+      // If first time we see this streamKey, create a local pending Scenario message
+      if (inflightByKeyRef.current[streamKey] == null) {
+        const createdAt = new Date().toISOString();
+        let idx = -1;
+        setMessages((prev) => {
+          const next = prev.slice();
+          next.push({ content: "", created_at: createdAt, sender: "Scenario" });
+          idx = next.length - 1;
+          return next;
+        });
+        inflightByKeyRef.current[streamKey] = idx;
+      }
+
+      // Append the delta to that pending message
+      const targetIdx = inflightByKeyRef.current[streamKey];
+      setMessages((prev) => {
+        const next = prev.slice();
+        if (next[targetIdx]) {
+          next[targetIdx] = { ...next[targetIdx], content: next[targetIdx].content + (delta || "") };
+        }
+        return next;
+      });
+    })
+    .on("broadcast", { event: "scenario_done" }, (evt) => {
+      // When producer signals done, drop the local pending (we'll rely on DB INSERT)
+      const { streamKey } = evt.payload as { streamKey: string };
+      const idx = inflightByKeyRef.current[streamKey];
+      if (idx != null) {
+        setMessages((prev) => {
+          // remove the pending line; DB INSERT will add the final one
+          const next = prev.slice();
+          next.splice(idx, 1);
+          return next;
+        });
+        delete inflightByKeyRef.current[streamKey];
+      }
+    })
+    .subscribe();
+
+  roomChannelRef.current = roomChannel;
+
+  return () => {
+    supabase.removeChannel(channel);
+    if (roomChannelRef.current) {
+      supabase.removeChannel(roomChannelRef.current);
+      roomChannelRef.current = null;
+    }
+  };
+}, [gameId]);
+
+  
 
   const handleStart = useCallback(
     async (message: { message: any }) => {
       // TEMPORARILY PLAYING THE SAME GAME
       // const newId = crypto.randomUUID();
-      setGameId("d3483344-67b8-41c3-888f-c717d4316241");
+      setGameId("782be954-26ac-4bdf-89ed-cf460ae696c8");
       // setMessages([]);
       // supabase
       //   .from("games")
@@ -110,6 +173,8 @@ export function useChatGame(
     },
     [characters, supabase]
   );
+
+  
 
   const handleSend = useCallback(
     async (message: string | { message: string }) => {
@@ -127,10 +192,13 @@ export function useChatGame(
       setLoading(true);
       isStreamingRef.current = true;
 
+      // A unique key for this streamed AI response (same across all clients)
+      const streamKey = `${gameId}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+
       try {
         const res = await fetch("/api/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", 'Cache-Control': 'no-cache, no-transform' },
           body: JSON.stringify({
             gameId,
             characters, // optional, but supported by your route
@@ -158,18 +226,28 @@ export function useChatGame(
 
         const decoder = new TextDecoder();
         let buffer = "";
+        let fullText = "";
 
-        const appendDelta = (delta: string) => {
-          if (!delta) return;
-          setMessages((prev) => {
-            const next = prev.slice();
-            const i = streamingMsgIndexRef.current ?? next.length - 1;
-            if (!next[i]) return prev; // safety
-            next[i] = {
-              ...next[i],
-              content: next[i].content + delta,
-            };
-            return next;
+       const roomChannel = roomChannelRef.current;   
+
+        const appendDeltaLocal = (delta: string) => {
+          fullText += delta;
+        if (!delta) return;
+        setMessages((prev) => {
+          const next = prev.slice();
+          const i = streamingMsgIndexRef.current ?? next.length - 1;
+          if (!next[i]) return prev;
+          next[i] = { ...next[i], content: next[i].content + delta };
+          return next;
+        });
+      };
+
+        const broadcastDelta = async (delta: string) => {
+          if (!roomChannel) return;
+          await roomChannel.send({
+            type: "broadcast",
+            event: "scenario_chunk",
+            payload: { streamKey, delta },
           });
         };
 
@@ -202,8 +280,37 @@ export function useChatGame(
           const { done, value } = await reader.read();
           if (done) break;
           buffer = decoder.decode(value, { stream: true });
-          appendDelta(extractContent(buffer));
+          // appendDelta(extractContent(buffer));
+          const delta = extractContent(buffer);
+          if (delta) {
+            appendDeltaLocal(delta);      // sender sees it instantly
+            broadcastDelta(delta);        // everyone else sees it via broadcast
+          }
         }
+
+        // Tell listeners to drop their pending buffer line
+      await roomChannel?.send({
+        type: "broadcast",
+        event: "scenario_done",
+        payload: { streamKey },
+      });
+
+      // One final durable insert of the AI message
+      if (fullText) {
+        await supabase.from("player_responses").insert([
+          { room: gameId, user_id: "Scenario", content: fullText },
+        ]);
+      }
+
+      // Sender also removes local pending to avoid double
+      setMessages((prev) => {
+        const next = prev.slice();
+        const i = streamingMsgIndexRef.current ?? idx;
+        if (next[i]?.sender === "Scenario" && next[i]?.content !== undefined) {
+          next.splice(i, 1);
+        }
+        return next;
+      });
       } catch (e) {
         console.error("stream error", e);
       } finally {
@@ -215,7 +322,7 @@ export function useChatGame(
         streamingMsgIndexRef.current = null;
       }
     },
-    [gameId, currentUser.name] // include characters in deps if not stable
+    [gameId, currentUser.name, characters] // include characters in deps if not stable
   );
 
   return { messages, loading, handleSend, handleStart, gameId };
