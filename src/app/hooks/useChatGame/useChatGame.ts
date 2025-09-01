@@ -1,6 +1,8 @@
 // hooks/useChatGame.ts
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
+import { useSearchParams } from "next/navigation";
+import { T } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
 
 type UiMessage = { id?: string; content: string; created_at: string; sender: string };
 
@@ -9,7 +11,11 @@ export function useChatGame(
   characters: { name: string; sunSign: string; avatarUrl?: string; motivation: string }[]
 ) {
   // If you want a different default, lift this to the caller.
-  const [gameId, setGameId] = useState<string>("9564f6c3-ed3a-4e06-a167-3ddc08989278");
+  const searchParams = useSearchParams();
+  const urlGameId = searchParams.get("gameId") ?? ""; // support both ?gameId= and ?id=
+  const urlCode = searchParams.get("code") ?? ""; // support both ?gameId= and ?id=
+  const urlStoryTitle = searchParams.get("story") ?? ""; // support both ?gameId= and ?id=
+  const [gameId, setGameId] = useState<string>(urlGameId);
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -40,6 +46,7 @@ export function useChatGame(
 
   // ----- load + subscribe -----
   useEffect(() => {
+    console.log({gameId})
     if (!gameId) return;
 
     let isMounted = true;
@@ -113,9 +120,12 @@ export function useChatGame(
   }, [gameId]);
 
   // ----- actions -----
-  const handleStart = useCallback(async (_message?: { message: string }) => {
+  const handleStart = useCallback(async () => {
+         await supabase
+        .from("games")
+        .insert([{ id: gameId, code: urlCode, title: urlStoryTitle }]);
     // keep it simple for now (no new game creation flow)
-    setGameId("9564f6c3-ed3a-4e06-a167-3ddc08989278");
+    // setGameId(gameId);
   }, []);
 
   const handleSend = useCallback(
