@@ -1,8 +1,10 @@
+// app/api/chat/route.ts (or route.js if you prefer JS)
 import { NextResponse } from "next/server";
 import { supabase } from "@/app/lib/supabaseClient";
+import { buildSystemPrompt } from "@/app/lib/format";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic"; // prevent static optimization
+export const dynamic = "force-dynamic";
 
 interface PlayerCharacter {
   name: string;
@@ -10,143 +12,125 @@ interface PlayerCharacter {
   motivation: "personal" | "investigative" | "accidental";
 }
 
-function formatCharacters(characters: PlayerCharacter[]) {
-  return characters
-    .map(
-      (c) =>
-        `- **${c.name}** (${c.sunSign}) — drawn in by ${c.motivation} motives.`
-    )
-    .join("\n");
+type ChatRole = "system" | "user" | "assistant";
+
+function asOpenAIMsg(role: ChatRole, content: string) {
+  return { role, content };
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  console.log({ chatRouteBody: body });
-  const { gameId, characters, new_response } = body || {};
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: "OPENAI_API_KEY missing" }, { status: 500 });
+    }
 
-  // const isFirstStep = new_response?.step_number === 0; //until steps are implemented
+    const body = await req.json().catch(() => ({}));
+    const { gameId, characters = [], new_response } = body || {};
 
-  const { data: priorResponses } = await supabase
-    .from("player_responses")
-    .select("content, user_id")
-    .eq("room", gameId)
-    .order("created_at", { ascending: true });
+    // Basic input checks (keep lightweight, avoid hard deps)
+    if (!gameId || typeof gameId !== "string") {
+      return NextResponse.json({ error: "Invalid gameId" }, { status: 400 });
+    }
+    const validChars =
+      Array.isArray(characters) &&
+      characters.every(
+        (c: any) =>
+          c &&
+          typeof c.name === "string" &&
+          typeof c.sunSign === "string" &&
+          ["personal", "investigative", "accidental"].includes(c.motivation)
+      );
 
-  const isFirstStep = priorResponses?.length == 1;
+    if (!validChars) {
+      return NextResponse.json({ error: "Invalid characters array" }, { status: 400 });
+    }
 
-  console.log({ isFirstStep });
-  const responseMessages =
-    priorResponses?.map((r: any) => ({
-      role: r.user_id == "Scenario" || r.user_id == null ? "assistant" : "user",
-      content:
-        r.user_id == "Scenario"
-          ? `${r.content}`
-          : `${r.user_id} responds: ${r.content}`,
-    })) || [];
+    // Load history from both tables, oldest->newest
+    const [{ data: players, error: pErr }, { data: systems, error: sErr }] = await Promise.all([
+      supabase
+        .from("player_responses")
+        .select("user_id, content, created_at")
+        .eq("room", gameId),
+      supabase
+        .from("system_responses")
+        .select("content, created_at")
+        .eq("room", gameId),
+    ]);
 
-  if (new_response?.user_id && new_response?.content) {
-    responseMessages.push({
-      role: "user",
-      content: `${new_response.player_id} responds: ${new_response.content}`,
+    if (pErr || sErr) {
+      return NextResponse.json({ error: pErr?.message || sErr?.message }, { status: 500 });
+    }
+
+    const chronological = [
+      ...(players ?? []).map((r) => ({
+        role: "user" as const,
+        // Keep speaker tag to preserve attribution in context
+        content: `${r.user_id}: ${r.content}`,
+        at: r.created_at,
+      })),
+      ...(systems ?? []).map((s) => ({
+        role: "assistant" as const,
+        content: s.content,
+        at: s.created_at,
+      })),
+    ].sort((a, b) => +new Date(a.at) - +new Date(b.at));
+
+    // Consider it "first step" if no prior system responses exist
+    const isFirstStep = (systems?.length ?? 0) === 0;
+
+    // Include the newest user input at the end (if provided)
+    if (new_response?.user_id && new_response?.content) {
+      chronological.push({
+        role: "user",
+        content: `${new_response.user_id}: ${new_response.content}`, // <-- fixed from player_id
+        at: new Date().toISOString(),
+      });
+    }
+
+    const systemPrompt = buildSystemPrompt(isFirstStep, characters as PlayerCharacter[]);
+
+    // Non-streaming completion
+    const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4",
+        stream: false,
+        messages: [
+          asOpenAIMsg("system", systemPrompt),
+          ...chronological.map(({ role, content }) => asOpenAIMsg(role, content)),
+        ],
+        // You can tune temperature etc. here
+      }),
     });
-  }
 
-  const systemPrompt = isFirstStep
-    ? `Design the opening scene of a surreal investigative cosmic horror RPG. The setup should hint at an ancient force and strange disappearances.
+    if (!aiResp.ok) {
+      const errText = await aiResp.text();
+      return NextResponse.json({ error: `OpenAI error: ${errText}` }, { status: 502 });
+    }
 
-Introduce characters using their zodiac archetypes:
+    const completion = await aiResp.json();
+    const content: string =
+      completion?.choices?.[0]?.message?.content?.trim?.() ?? "";
 
-${formatCharacters(characters)}
+    // Persist one durable system message; clients will receive via Realtime
+    if (content) {
+      // Optional step_number logic removed while you’re simplifying. Re-add later if needed.
+      const { error: insErr } = await supabase
+        .from("system_responses")
+        .insert([{ room: gameId, content }]);
 
-Begin with eerie tension and mystery. Return only the first short paragraph of the story in clean, spooky Markdown.`
-    : `Continue the RPG story based on the following player input.
-
-Characters:
-${formatCharacters(characters)}
-
-Respond with one short paragraph, max 2 sentences.`;
-
-  console.log({ systemPrompt });
-  console.log({ responseMessages });
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4",
-      stream: true,
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...responseMessages,
-      ],
-    }),
-  });
-
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-  let cleanNarrative = "";
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      const reader = response.body?.getReader();
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-
-          for (const line of chunk.split("\n")) {
-            if (line.startsWith("data: ")) {
-              const json = line.replace("data: ", "").trim();
-              if (json && json !== "[DONE]") {
-                try {
-                  const parsed = JSON.parse(json);
-                  const content = parsed.choices?.[0]?.delta?.content;
-                  if (content) {
-                    cleanNarrative += content;
-                    controller.enqueue(encoder.encode(content));
-                  }
-                } catch (e) {
-                  console.error("Error parsing chunk", json);
-                }
-              }
-            }
-          }
-        }
-
-        // determine step number
-        let stepNumber = 0;
-        if (new_response?.step_number !== undefined) {
-          stepNumber = new_response.step_number;
-        } else {
-          const { data: existing } = await supabase
-            .from("scenario_steps")
-            .select("step_number")
-            .eq("game_id", gameId)
-            .order("step_number", { ascending: false })
-            .limit(1);
-
-          stepNumber = existing?.[0]?.step_number + 1 || 0;
-        }
-
-        await supabase.from("system_responses").insert([
-          {
-            room: gameId,
-            content: cleanNarrative.trim(),
-            step_number: stepNumber,
-          },
-        ]);
+      if (insErr) {
+        return NextResponse.json({ error: insErr.message }, { status: 500 });
       }
-      controller.close();
-    },
-  });
+    }
 
-  return new NextResponse(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-    },
-  });
+    return NextResponse.json({ ok: true, content });
+  } catch (e: any) {
+    console.error("chat route error", e);
+    return NextResponse.json({ error: e?.message || "Unknown error" }, { status: 500 });
+  }
 }
