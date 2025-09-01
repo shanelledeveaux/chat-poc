@@ -59,7 +59,7 @@ export default function Page() {
   const onSend = async (msg: string | { message: string }) => {
     // if no gameId yet, start a new one first
     if (!gameId) {
-      handleStart({ message: msg });
+      handleStart();
     }
     await handleSend(typeof msg === "string" ? msg : msg.message);
   };

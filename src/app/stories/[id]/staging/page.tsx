@@ -2,6 +2,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { PrimaryButton } from "@/app/components/PrimaryButton/PrimaryButton";
+import { supabase } from "@/app/lib/supabaseClient";
 
 export default async function StoryStagingPage({
   params,
@@ -13,13 +14,28 @@ export default async function StoryStagingPage({
   // TODO: Fetch story data from DB
   const story = { title: "Name of story" };
   if (!story) return notFound();
-
-  const code = "54396"; // TODO: generate unique game code
+  const gameId =  crypto.randomUUID()
+  const code = "C54396"; // TODO: generate unique game code
   const players = [
     { id: 1, name: "Player 1", avatar: "/user-avatar.jpg" },
     { id: 2, name: "Player 2", avatar: "/user-avatar.jpg" },
     { id: 3, name: "Player 3", avatar: "/user-avatar.jpg" },
   ];
+
+  async function handleStart() {
+    // Insert into Supabase
+    const { error } = await supabase
+      .from("games")
+      .insert([{ id: gameId, title: story.title, code }]);
+
+    if (error) {
+      console.error("Error creating game:", error);
+      return;
+    }
+
+    // Navigate to chat page
+      window.location.href = `/chat?story=${story.title}&code=${code}&gameId=${gameId}`;
+  }
 
   return (
     <section className="max-w-sm mx-auto py-6 text-center">
@@ -66,7 +82,7 @@ export default async function StoryStagingPage({
 
       {/* Start Button */}
       <PrimaryButton
-        href={`/chat?story=${id}&code=${code}`}
+        onClick={handleStart}
         className="mt-8 block rounded-md bg-indigo-100 px-4 py-3 text-xs font-bold text-gray-900 hover:bg-indigo-200 active:bg-indigo-300"
       >
         START YOUR QUEST
