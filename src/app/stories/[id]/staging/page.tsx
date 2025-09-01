@@ -15,7 +15,7 @@ export default async function StoryStagingPage({
   const story = { title: "Name of story" };
   if (!story) return notFound();
   const gameId =  crypto.randomUUID()
-  const code = "B54396"; // TODO: generate unique game code
+  const code = "C54396"; // TODO: generate unique game code
   const players = [
     { id: 1, name: "Player 1", avatar: "/user-avatar.jpg" },
     { id: 2, name: "Player 2", avatar: "/user-avatar.jpg" },
