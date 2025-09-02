@@ -14,7 +14,7 @@ export default async function StoryStagingPage({
   // TODO: Fetch story data from DB
   const story = { title: "Name of story" };
   if (!story) return notFound();
-  const gameId =  crypto.randomUUID()
+  const gameId = crypto.randomUUID();
   const code = "C54396"; // TODO: generate unique game code
   const players = [
     { id: 1, name: "Player 1", avatar: "/user-avatar.jpg" },
@@ -34,11 +34,11 @@ export default async function StoryStagingPage({
     }
 
     // Navigate to chat page
-      window.location.href = `/chat?story=${story.title}&code=${code}&gameId=${gameId}`;
+    window.location.href = `/chat?story=${story.title}&code=${code}&gameId=${gameId}`;
   }
 
   return (
-    <section className="max-w-sm mx-auto py-6 text-center">
+    <section className="mx-auto py-6 text-center">
       <header className="mb-6">
         <span className="block text-base font-semibold">LOGO</span>
       </header>
@@ -59,7 +59,7 @@ export default async function StoryStagingPage({
       </div>
 
       {/* Player slots */}
-      <div className="mt-8 grid grid-cols-3 gap-4 justify-items-center">
+      <div className="max-w-md mt-8 grid grid-cols-3 gap-4 justify-items-center justify-self-center">
         {Array.from({ length: 6 }).map((_, idx) => {
           const player = players[idx];
           return player ? (
@@ -83,7 +83,7 @@ export default async function StoryStagingPage({
       {/* Start Button */}
       <PrimaryButton
         onClick={handleStart}
-        className="mt-8 block rounded-md bg-indigo-100 px-4 py-3 text-xs font-bold text-gray-900 hover:bg-indigo-200 active:bg-indigo-300"
+        className="justify-self-center mt-8 block rounded-md bg-indigo-100 px-4 py-3 text-xs font-bold text-gray-900 hover:bg-indigo-200 active:bg-indigo-300"
       >
         START YOUR QUEST
       </PrimaryButton>

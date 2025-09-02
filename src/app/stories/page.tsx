@@ -11,29 +11,29 @@ type Story = {
 
 const STORIES: Story[] = [
   {
-    id: "game-show",
-    title: "Name of story",
+    id: "corporate",
+    title: "Corporate Signs",
     peopleRange: "2–6 people",
     blurb:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incosti ididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud.",
-    genre: "GAME SHOW",
+      "At ZodiaCorp, every department runs on planetary energy, and your birth chart determines your role in the cosmic machine, but something has gone wrong. Your Mercury placement glitched during onboarding, and now you’ve been placed in the Scorpio Compliance Division. In this place, secrets are currency and coworkers vanish mid-meeting. A mysterious memo slides across your desk: “You weren’t sent here by accident. They’re watching your chart.” Do you play along, or dig deeper into the astrological chaos beneath the cubicles?",
+    genre: "CORPORATE",
     badgeSrc: "/avatar1.jpg",
   },
   {
     id: "survival",
-    title: "Name of story",
+    title: "Zodiac Survivor",
     peopleRange: "2–6 people",
     blurb:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incosti ididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud.",
+      "The sky cracked during the Great Conjunction, and the world hasn’t been the same since. Survivors have splintered into sign-based factions, each ruled by the traits and flaws of their ruling archetype. Today, a stranger finds you unconscious at the edge of a Scorpio camp, a birth chart is etched into your skin. A prophecy of: You’re the key to restoring the balance or breaking it for good, whispers in their mind. What sign guides your nature, and which one hunts you?",
     genre: "SURVIVAL",
   },
   {
-    id: "romance",
-    title: "Name of story",
+    id: "hunter",
+    title: "Zodiac Hunter",
     peopleRange: "2–6 people",
     blurb:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incosti ididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud.",
-    genre: "ROMANCE",
+      "In a world where the stars dictate your fate, you are a Hunter, tracking down rogue celestial bodies that threaten the balance of the universe. But when you discover a hidden conspiracy among the Zodiac Council, you must decide whether to follow your duty or forge your own path. Will you become the hero the cosmos needs, or will you be consumed by the very forces you seek to control?",
+    genre: "HUNTER",
   },
 ];
 
@@ -61,7 +61,7 @@ function StoryCard({ s }: { s: Story }) {
 
 export default function StoriesPage() {
   return (
-    <section className="max-w-sm mx-auto h-full pb-12">
+    <section className="mx-auto h-full pb-12">
       <div className="flex items-center justify-between py-4">
         <span className="text-base font-semibold tracking-wide">LOGO</span>
 
