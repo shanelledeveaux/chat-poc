@@ -11,24 +11,28 @@ export default function StoryStagingPage({
 }) {
   const { id } = params;
 
-  // Fake story for now
-  const story = { title: "Name of story" };
-
+  const [story, setStory] = useState<any>(null);
   const [gameCode, setGameCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    function generateCode(length = 6) {
-      const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-      let result = "";
-      const randomValues = new Uint32Array(length);
-      crypto.getRandomValues(randomValues);
-      for (let i = 0; i < length; i++) {
-        result += chars[randomValues[i] % chars.length];
-      }
-      return result;
-    }
-    setGameCode(generateCode(6));
+    (async () => {
+      const { data, error } = await supabase
+        .from("stories")
+        .select("id, title")
+        .eq("id", id)
+        .single();
+      if (error) setErr(error.message);
+      setStory(data);
+    })();
+  }, [id]);
+
+  useEffect(() => {
+    const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    const rnd = new Uint32Array(6);
+    crypto.getRandomValues(rnd);
+    setGameCode(Array.from(rnd, (n) => chars[n % chars.length]).join(""));
   }, []);
 
   const players = [
@@ -39,35 +43,34 @@ export default function StoryStagingPage({
 
   async function handleStart() {
     try {
+      if (!story) return;
       setLoading(true);
-
-      // Generate a fresh gameId on click (don’t do this during render)
       const gameId = crypto.randomUUID();
 
-      // Insert into Supabase (adjust columns to match your schema)
-      const { error } = await supabase
-        .from("games")
-        .insert([{ id: gameId, title: story.title, code: gameCode }]);
+      const { error } = await supabase.from("games").insert([
+        {
+          id: gameId,
+          story_id: story.id,
+          title: story.title,
+          code: gameCode,
+        },
+      ]);
+      if (error) throw error;
 
-      if (error) {
-        console.error("Error creating game:", error);
-        alert("Could not create game. Check console for details.");
-        setLoading(false);
-        return;
-      }
-
-      // Hard redirect so you don’t depend on router
       window.location.assign(
         `/chat?story=${encodeURIComponent(
-          story.title
+          story.id ?? story.title
         )}&code=${gameCode}&gameId=${gameId}`
       );
     } catch (e) {
       console.error(e);
-      alert("Something went wrong starting the game.");
+      alert("Could not create game.");
       setLoading(false);
     }
   }
+
+  if (err) return <p className="p-6 text-red-600">{err}</p>;
+  if (!story) return <p className="p-6">Loading…</p>;
 
   return (
     <section className="mx-auto py-6 text-center">
