@@ -1,48 +1,30 @@
 import { PrimaryButton } from "../components/PrimaryButton/PrimaryButton"; // Adjust the path as needed
+import { supabase } from "../lib/supabaseClient";
 
 type Story = {
   id: string;
   title: string;
-  peopleRange: string;
+  people_range: string;
   blurb: string;
   genre: string;
-  badgeSrc?: string; // small circular avatar/badge (optional)
 };
 
-const STORIES: Story[] = [
-  {
-    id: "game-show",
-    title: "Name of story",
-    peopleRange: "2–6 people",
-    blurb:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incosti ididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud.",
-    genre: "GAME SHOW",
-    badgeSrc: "/avatar1.jpg",
-  },
-  {
-    id: "survival",
-    title: "Name of story",
-    peopleRange: "2–6 people",
-    blurb:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incosti ididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud.",
-    genre: "SURVIVAL",
-  },
-  {
-    id: "romance",
-    title: "Name of story",
-    peopleRange: "2–6 people",
-    blurb:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incosti ididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud.",
-    genre: "ROMANCE",
-  },
-];
+const { data: stories, error } = await supabase
+  .from("stories")
+  .select("id,title, people_range, blurb, genre")
+  .order("created_at", { ascending: false });
+
+if (error) {
+  // Render something graceful or throw to Next’s error boundary
+  throw new Error(error.message);
+}
 
 function StoryCard({ s }: { s: Story }) {
   return (
     <article className="relative border-t border-gray-200 bg-white p-4">
       <header className="mb-2 flex items-start justify-between gap-3">
         <h3 className="text-lg font-semibold">{s.title}</h3>
-        <span className="text-xs text-gray-500 shrink-0">{s.peopleRange}</span>
+        <span className="text-xs text-gray-500 shrink-0">{s.people_range}</span>
       </header>
 
       <p className="text-sm text-gray-600 mb-4">{s.blurb}</p>
@@ -61,7 +43,7 @@ function StoryCard({ s }: { s: Story }) {
 
 export default function StoriesPage() {
   return (
-    <section className="max-w-sm mx-auto h-full pb-12">
+    <section className="mx-auto h-full pb-12">
       <div className="flex items-center justify-between py-4">
         <span className="text-base font-semibold tracking-wide">LOGO</span>
 
@@ -69,7 +51,7 @@ export default function StoriesPage() {
       </div>
 
       <div className="rounded-md overflow-y-auto h-full">
-        {STORIES.map((s, i) => (
+        {stories?.map((s, i) => (
           <StoryCard key={s.id} s={s} />
         ))}
         {/* bottom border */}

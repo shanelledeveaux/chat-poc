@@ -1,21 +1,40 @@
 "use client";
-import { notFound } from "next/navigation";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { PrimaryButton } from "@/app/components/PrimaryButton/PrimaryButton";
 import { supabase } from "@/app/lib/supabaseClient";
 
-export default async function StoryStagingPage({
+export default function StoryStagingPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = await params;
+  const { id } = params;
 
-  // TODO: Fetch story data from DB
-  const story = { title: "Name of story" };
-  if (!story) return notFound();
-  const gameId =  crypto.randomUUID()
-  const code = "C54396"; // TODO: generate unique game code
+  const [story, setStory] = useState<any>(null);
+  const [gameCode, setGameCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("stories")
+        .select("id, title")
+        .eq("id", id)
+        .single();
+      if (error) setErr(error.message);
+      setStory(data);
+    })();
+  }, [id]);
+
+  useEffect(() => {
+    const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    const rnd = new Uint32Array(6);
+    crypto.getRandomValues(rnd);
+    setGameCode(Array.from(rnd, (n) => chars[n % chars.length]).join(""));
+  }, []);
+
   const players = [
     { id: 1, name: "Player 1", avatar: "/user-avatar.jpg" },
     { id: 2, name: "Player 2", avatar: "/user-avatar.jpg" },
@@ -23,43 +42,69 @@ export default async function StoryStagingPage({
   ];
 
   async function handleStart() {
-    // Insert into Supabase
-    const { error } = await supabase
-      .from("games")
-      .insert([{ id: gameId, title: story.title, code }]);
+    try {
+      if (!story) return;
+      setLoading(true);
+      const gameId = crypto.randomUUID();
 
-    if (error) {
-      console.error("Error creating game:", error);
-      return;
+      const { error } = await supabase.from("games").insert([
+        {
+          id: gameId,
+          story_id: story.id,
+          title: story.title,
+          code: gameCode,
+        },
+      ]);
+      if (error) throw error;
+
+      window.location.assign(
+        `/chat?story=${encodeURIComponent(
+          story.id ?? story.title
+        )}&code=${gameCode}&gameId=${gameId}`
+      );
+    } catch (e) {
+      console.error(e);
+      alert("Could not create game.");
+      setLoading(false);
     }
-
-    // Navigate to chat page
-      window.location.href = `/chat?story=${story.title}&code=${code}&gameId=${gameId}`;
   }
 
+  if (err) return <p className="p-6 text-red-600">{err}</p>;
+  if (!story) return <p className="p-6">Loading…</p>;
+
   return (
-    <section className="max-w-sm mx-auto py-6 text-center">
+    <section className="mx-auto py-6 text-center">
       <header className="mb-6">
         <span className="block text-base font-semibold">LOGO</span>
       </header>
 
-      <h1 className="text-2xl font-bold">{story.title}</h1>
+      <h1 className="text-2xl font-bold">
+        {story?.title ?? "Loading story..."}
+      </h1>
       <p className="mt-2 text-sm text-gray-600">Share this code with friends</p>
 
       <div className="mt-3 flex items-center justify-center gap-3">
         <span className="rounded-md bg-gray-100 px-6 py-2 text-2xl font-bold tracking-widest">
-          {code}
+          {gameCode || "••••••"}
         </span>
-        <button onClick={() => navigator.clipboard.writeText(code)}>📋</button>
         <button
-          onClick={() => navigator.share?.({ text: `Join my game: ${code}` })}
+          onClick={() => gameCode && navigator.clipboard.writeText(gameCode)}
+          disabled={!gameCode}
+        >
+          📋
+        </button>
+        <button
+          onClick={() =>
+            gameCode && navigator.share?.({ text: `Join my game: ${gameCode}` })
+          }
+          disabled={!gameCode}
         >
           🔗
         </button>
       </div>
 
       {/* Player slots */}
-      <div className="mt-8 grid grid-cols-3 gap-4 justify-items-center">
+      <div className="max-w-md mt-8 grid grid-cols-3 gap-4 justify-items-center justify-self-center">
         {Array.from({ length: 6 }).map((_, idx) => {
           const player = players[idx];
           return player ? (
@@ -83,9 +128,11 @@ export default async function StoryStagingPage({
       {/* Start Button */}
       <PrimaryButton
         onClick={handleStart}
-        className="mt-8 block rounded-md bg-indigo-100 px-4 py-3 text-xs font-bold text-gray-900 hover:bg-indigo-200 active:bg-indigo-300"
+        className={`justify-self-center mt-8 block rounded-md bg-indigo-100 px-4 py-3 text-xs font-bold text-gray-900 hover:bg-indigo-200 active:bg-indigo-300 ${
+          !gameCode || loading ? "opacity-60 pointer-events-none" : ""
+        }`}
       >
-        START YOUR QUEST
+        {loading ? "Starting..." : "START YOUR QUEST"}
       </PrimaryButton>
     </section>
   );

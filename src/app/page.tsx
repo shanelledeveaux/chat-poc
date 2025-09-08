@@ -10,7 +10,7 @@ export default function HomePage() {
   });
 
   return (
-    <section className="flex flex-col items-center h-full text-left px-4 pt-6 pb-20 max-w-sm mx-auto">
+    <section className="flex flex-col items-center h-full text-left px-4 pt-6 pb-20 mx-auto">
       {/* Logo */}
       <div className="w-full flex justify-start mb-6">
         <span className="text-base font-semibold tracking-wide">LOGO</span>
