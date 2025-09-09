@@ -1,9 +1,10 @@
 "use client";
-import React from "react";
+import React, { Suspense, useCallback } from "react";
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import { CharacterList } from "../components/CharacterList/CharacterList";
 import { useChatGame } from "../hooks/useChatGame/useChatGame";
 import { ChatPanel } from "../components/ChatPanel/ChatPanel";
+import { useSearchParams } from "next/navigation";
 
 const characters: {
   name: string;
@@ -49,24 +50,29 @@ const currentUser: PlayerCharacter = {
   avatarUrl: "user-avatar.jpg",
   motivation: "personal",
 };
+function ChatGameInner() {
+  const searchParams = useSearchParams();
+  const gameId = searchParams.get("gameId") ?? "";
 
-export default function Page() {
-  const { handleSend, handleStart, gameId, messages, loading } = useChatGame(
+  const { handleSend, handleStart, messages, loading } = useChatGame(
     currentUser,
-    characters
+    [...characters],
+    gameId
   );
 
-  const onSend = async (msg: string | { message: string }) => {
-    // if no gameId yet, start a new one first
-    if (!gameId) {
-      handleStart();
-    }
-    await handleSend(typeof msg === "string" ? msg : msg.message);
-  };
+  const onSend = useCallback(
+    async (msg: string | { message: string }) => {
+      if (!gameId) {
+        await handleStart("Chat to start a new game!");
+      }
+      await handleSend(typeof msg === "string" ? msg : msg.message);
+    },
+    [gameId, handleStart, handleSend]
+  );
 
   return (
     <main>
-      <CharacterList characters={characters} />
+      <CharacterList characters={[...characters]} />
       <ChatPanel
         currentUser={currentUser}
         messages={messages}
@@ -74,5 +80,12 @@ export default function Page() {
         onSend={onSend}
       />
     </main>
+  );
+}
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ChatGameInner />
+    </Suspense>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { useSearchParams } from "next/navigation";
 
 type UiMessage = {
   id?: string;
@@ -22,11 +21,9 @@ export function useChatGame(
     sunSign: string;
     avatarUrl?: string;
     motivation: string;
-  }[]
+  }[],
+  gameId: string
 ) {
-  const searchParams = useSearchParams();
-  const gameId = searchParams.get("gameId") ?? "";
-
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [introBlurb, setIntroBlurb] = useState<string | null>(null);
@@ -248,9 +245,9 @@ export function useChatGame(
     messages,
     loading,
     hasMessages,
-    introBlurb, // will be null after seeding or if messages already exist
+    introBlurb,
     handleStart,
     handleSend,
-    gameId,
+    // gameId,
   };
 }

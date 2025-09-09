@@ -1,15 +1,15 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { PrimaryButton } from "@/app/components/PrimaryButton/PrimaryButton";
 import { supabase } from "@/app/lib/supabaseClient";
 
 export default function StoryStagingPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = use(params);
 
   const [story, setStory] = useState<any>(null);
   const [gameCode, setGameCode] = useState("");
